@@ -23,6 +23,8 @@ export default function App() {
 
   const handleContinue = () => {
     console.log("User is ready to enter metrics.");
+    setArousal(50);
+    setPleasure(50);
     setShowWaiting(false);
   };
 
