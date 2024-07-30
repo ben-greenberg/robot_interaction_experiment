@@ -13,3 +13,5 @@
    ```bash
     npx expo start
    ```
+4. If You Have Any Dependencies Issues Try Running This
+   ``` npm install react-native @mui/material @emotion/react @emotion/styled file-saver @react-native-community/slider ```
