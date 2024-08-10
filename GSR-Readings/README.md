@@ -1,6 +1,5 @@
 Here's a more detailed `README.md` with an extensive script breakdown, including explanations for each function and pylsl functionality:
 
-```markdown
 # ReceiveAndPlot Example for LSL
 
 ## Overview
