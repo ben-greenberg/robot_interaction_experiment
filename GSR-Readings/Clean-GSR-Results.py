@@ -27,6 +27,6 @@ def process_csv(file_path):
     print(f"Processed data has been saved to {file_path}")
 
 if __name__ == "__main__":
-    input_file = r"C:\Users\RAMlab\GSR_Data\GSR_Output_14-24-09.csv"  # Replace with your CSV file path
+    input_file = r"/Users/likhith/Downloads/GSR_Output.csv"  # Replace with your CSV file path
 
     process_csv(input_file)
