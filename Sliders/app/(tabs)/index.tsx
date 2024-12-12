@@ -134,7 +134,7 @@ export default function App() {
         <View style={styles.sliderContainer}>
           <Text style={styles.label}>Move The Slider To Rate Your Level Of Arousal</Text>
           <View style={styles.sliderRow}>
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/ArousalPleasureSliders/assets/images/unaroused.png')} style={styles.icon} />
+            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/Robot-Interaction-Experiment/Sliders/assets/images/unaroused.png')} style={styles.icon} />
             <Slider
               value={arousal}
               onChange={handleArousalSliderChange}
@@ -153,17 +153,17 @@ export default function App() {
                 },
               }}
             />
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/ArousalPleasureSliders/assets/images/aroused.png')} style={styles.icon} />
+            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/Robot-Interaction-Experiment/Sliders/assets/images/aroused.png')} style={styles.icon} />
           </View>
           <View style={styles.gradientIcon}>
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/ArousalPleasureSliders/assets/images/Slider Gradient.png')} style={styles.gradientImage} />
+            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/Robot-Interaction-Experiment/Sliders/assets/images/Slider Gradient.png')} style={styles.gradientImage} />
           </View>
         </View>
 
         <View style={styles.sliderContainer}>
           <Text style={styles.label}>Move The Slider To Rate Your Level Of Pleasure</Text>
           <View style={styles.sliderRow}>
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/ArousalPleasureSliders/assets/images/sad.png')} style={styles.icon} />
+            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/Robot-Interaction-Experiment/Sliders/assets/images/sad.png')} style={styles.icon} />
             <Slider
               value={pleasure}
               onChange={handlePleasureSliderChange}
@@ -182,10 +182,10 @@ export default function App() {
                 },
               }}
             />
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/ArousalPleasureSliders/assets/images/happy.png')} style={styles.icon} />
+            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/Robot-Interaction-Experiment/Sliders/assets/images/happy.png')} style={styles.icon} />
           </View>
           <View style={styles.gradientIcon}>
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/ArousalPleasureSliders/assets/images/Slider Gradient.png')} style={styles.gradientImage} />
+            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/Robot-Interaction-Experiment/Sliders/assets/images/Slider Gradient.png')} style={styles.gradientImage} />
           </View>
         </View>
 
