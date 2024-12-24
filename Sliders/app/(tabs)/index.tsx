@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, TextInput, Platform } from 'react-native';
 import Slider from '@mui/material/Slider';  
 import { saveAs } from 'file-saver';  
@@ -8,7 +8,8 @@ export default function App() {
   const [trialNumber, setTrialNumber] = useState(1);
   const [showWaiting, setShowWaiting] = useState(true);
   const [showNameInput, setShowNameInput] = useState(true);
-  const [showEndScreen, setShowEndScreen] = useState(false);  
+  const [showEndScreen, setShowEndScreen] = useState(false); 
+   
   const [arousal, setArousal] = useState<number>(50);
   const [pleasure, setPleasure] = useState(50);
   const [results, setResults] = useState<string[][]>([]);  
@@ -33,13 +34,38 @@ export default function App() {
       setShowNameInput(false);
       setShowWaiting(true);
     }
+
+    setStater(1);
+    sendStateToBackend(1);
   };
+  
+  const sendStateToBackend = async (state: any) => {
+    console.log(state);
+    try {
+      const response = await fetch('http://localhost:3001/api/state', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ state }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to send state');
+      }
+  
+      console.log('State sent successfully');
+    } catch (error) {
+      console.error('Error sending state:', error);
+    }
+  };
+
 
   const appendResults = (newResult: string[]) => {
     setResults(prevResults => [...prevResults, newResult]);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     console.log("Trial", trialNumber, "Arousal:", arousal, "Pleasure:", pleasure);
     const data = [trialNumber.toString(), arousal.toString(), pleasure.toString()];  // Convert to strings
 
@@ -50,6 +76,29 @@ export default function App() {
       setShowWaiting(true);
     } else {
       endExperiment([...results, data]); 
+    }
+
+    setStater(1);
+    sendStateToBackend(1);
+    
+  };
+
+  const [state, setStater] = useState(0);
+
+  const fetchState = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/state');
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log(data, "DATA");
+        setStater(data.currentState); // Set the state received from the server
+        console.log(data.currentState, "EEE");
+      } else {
+        console.error('Error fetching state:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching state:', error);
     }
   };
 
@@ -81,7 +130,25 @@ export default function App() {
     setShowEndScreen(false);
   };
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log("OIUHBN", state);
+      fetchState();
+      if (state == 1) {
+        fetchState();
+      } else if (state === 0) {
+        handleContinue();
+      }
+    }, 1000);
+
+    return () => clearInterval(interval); // Cleanup interval on unmount
+  }, [state]);
+  
   if (showNameInput) {
+    if (state != 0) {
+      setStater(0)
+      sendStateToBackend(0);
+    }
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Enter Your Name</Text>
@@ -101,19 +168,22 @@ export default function App() {
     );
   }
 
-  if (showWaiting) {
+  if (showWaiting || state != 0) {
+    console.log("WAITING")
+    console.log(state);
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Trial #{trialNumber} in Progress</Text>
         <Text style={styles.subtitle}>Please wait to enter your arousal and pleasure metrics</Text>
-        <TouchableOpacity style={styles.button} onPress={handleContinue}>
-          <Text style={styles.buttonText}>Continue</Text>
-        </TouchableOpacity>
       </View>
     );
   }
 
   if (showEndScreen) {
+    if (state != 0) {
+      // setState(0);
+      sendStateToBackend(state);
+    }
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Experiment Completed</Text>
@@ -125,6 +195,7 @@ export default function App() {
     );
   }
 
+  if (state == 0) {
   return (
     <ScrollView>
       <View style={styles.container}>
@@ -196,6 +267,7 @@ export default function App() {
     </ScrollView>
   );
 }
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -230,52 +302,51 @@ const styles = StyleSheet.create({
   input: {
     width: '100%',
     padding: 10,
+    fontSize: 20,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    textAlign: 'center', 
+    borderRadius: 10,
+    borderColor: '#cccccc',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  button: {
+    backgroundColor: '#1E90FF',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+    marginTop: 20,
+  },
+  buttonText: {
+    fontSize: 20,
+    color: 'white',
+    fontWeight: 'bold',
   },
   sliderContainer: {
-    width: '100%',
-    marginBottom: 40,
+    marginBottom: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   label: {
     fontSize: 20,
-    marginBottom: 10,
+    marginBottom: 20,
     textAlign: 'center',
   },
   sliderRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  slider: {
-    flex: 5,
-    height: 40,
-    marginHorizontal: 10,
-  },
   icon: {
-    width: 70,
-    height: 70,
+    width: 50,
+    height: 50,
     marginHorizontal: 10,
   },
   gradientIcon: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 40,
+    position: 'absolute',
+    bottom: -15,
+    left: 50,
   },
   gradientImage: {
-    width: '90%', 
-    height: 92.5,
-    resizeMode: 'contain', 
-  },
-  button: {
-    backgroundColor: '#1E90FF',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
+    width: 1050,
+    height: 150,
   },
 });
