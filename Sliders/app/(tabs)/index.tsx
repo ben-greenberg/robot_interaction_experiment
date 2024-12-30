@@ -41,13 +41,14 @@ export default function App() {
   
   const sendStateToBackend = async (state: any) => {
     console.log(state);
+    console.log(trialNumber, "JHGVBJHGJHGFVB");
     try {
       const response = await fetch('http://192.168.1.16:3001/api/state', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ state }),
+        body: JSON.stringify({state, trialNumber}),
       });
   
       if (!response.ok) {
