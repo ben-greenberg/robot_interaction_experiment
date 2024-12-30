@@ -42,7 +42,7 @@ export default function App() {
   const sendStateToBackend = async (state: any) => {
     console.log(state);
     try {
-      const response = await fetch('http://localhost:3001/api/state', {
+      const response = await fetch('http://192.168.1.16:3001/api/state', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,7 +87,7 @@ export default function App() {
 
   const fetchState = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/state');
+      const response = await fetch('http://192.168.1.16:3001/api/state');
       const data = await response.json();
 
       if (response.ok) {
@@ -205,7 +205,7 @@ export default function App() {
         <View style={styles.sliderContainer}>
           <Text style={styles.label}>Move The Slider To Rate Your Level Of Arousal</Text>
           <View style={styles.sliderRow}>
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/Robot-Interaction-Experiment/Sliders/assets/images/unaroused.png')} style={styles.icon} />
+            <Image source={require('C:/Users/benrg/OneDrive - Rutgers University/Documents/Rutgers/Research/Path Curvature Experiment/Phase 2/robot_interaction_experiment/Sliders/assets/images/unaroused.png')} style={styles.icon} />
             <Slider
               value={arousal}
               onChange={handleArousalSliderChange}
@@ -224,17 +224,17 @@ export default function App() {
                 },
               }}
             />
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/Robot-Interaction-Experiment/Sliders/assets/images/aroused.png')} style={styles.icon} />
+            <Image source={require('C:/Users/benrg/OneDrive - Rutgers University/Documents/Rutgers/Research/Path Curvature Experiment/Phase 2/robot_interaction_experiment/Sliders/assets/images/aroused.png')} style={styles.icon} />
           </View>
           <View style={styles.gradientIcon}>
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/Robot-Interaction-Experiment/Sliders/assets/images/Slider Gradient.png')} style={styles.gradientImage} />
+            <Image source={require('C:/Users/benrg/OneDrive - Rutgers University/Documents/Rutgers/Research/Path Curvature Experiment/Phase 2/robot_interaction_experiment/Sliders/assets/images/Slider Gradient.png')} style={styles.gradientImage} />
           </View>
         </View>
 
         <View style={styles.sliderContainer}>
           <Text style={styles.label}>Move The Slider To Rate Your Level Of Pleasure</Text>
           <View style={styles.sliderRow}>
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/Robot-Interaction-Experiment/Sliders/assets/images/sad.png')} style={styles.icon} />
+            <Image source={require('C:/Users/benrg/OneDrive - Rutgers University/Documents/Rutgers/Research/Path Curvature Experiment/Phase 2/robot_interaction_experiment/Sliders/assets/images/sad.png')} style={styles.icon} />
             <Slider
               value={pleasure}
               onChange={handlePleasureSliderChange}
@@ -253,10 +253,10 @@ export default function App() {
                 },
               }}
             />
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/Robot-Interaction-Experiment/Sliders/assets/images/happy.png')} style={styles.icon} />
+            <Image source={require('C:/Users/benrg/OneDrive - Rutgers University/Documents/Rutgers/Research/Path Curvature Experiment/Phase 2/robot_interaction_experiment/Sliders/assets/images/happy.png')} style={styles.icon} />
           </View>
           <View style={styles.gradientIcon}>
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/Robot-Interaction-Experiment/Sliders/assets/images/Slider Gradient.png')} style={styles.gradientImage} />
+            <Image source={require('C:/Users/benrg/OneDrive - Rutgers University/Documents/Rutgers/Research/Path Curvature Experiment/Phase 2/robot_interaction_experiment/Sliders/assets/images/Slider Gradient.png')} style={styles.gradientImage} />
           </View>
         </View>
 
