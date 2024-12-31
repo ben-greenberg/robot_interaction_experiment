@@ -9,16 +9,19 @@ export default function App() {
   const [showWaiting, setShowWaiting] = useState(true);
   const [showNameInput, setShowNameInput] = useState(true);
   const [showEndScreen, setShowEndScreen] = useState(false); 
-   
+  const [state, setStater] = useState(0);
   const [arousal, setArousal] = useState<number>(50);
   const [pleasure, setPleasure] = useState(50);
   const [results, setResults] = useState<string[][]>([]);  
+  var prevState = 1;
 
   const handleArousalSliderChange = (event: Event, newValue: number | number[]) => {
+    console.log(newValue);
     setArousal(newValue as number);
   };
 
   const handlePleasureSliderChange = (event: Event, newValue: number | number[]) => {
+    console.log(newValue);
     setPleasure(newValue as number);
   };
 
@@ -42,13 +45,14 @@ export default function App() {
   const sendStateToBackend = async (state: any) => {
     console.log(state);
     console.log(trialNumber, "JHGVBJHGJHGFVB");
+    const loc = "SLIDER"
     try {
       const response = await fetch('http://192.168.1.16:3001/api/state', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({state, trialNumber}),
+        body: JSON.stringify({state, trialNumber, loc}),
       });
   
       if (!response.ok) {
@@ -71,6 +75,8 @@ export default function App() {
     const data = [trialNumber.toString(), arousal.toString(), pleasure.toString()];  // Convert to strings
 
     appendResults(data);
+    setArousal(50);
+    setPleasure(50);
 
     if (trialNumber < 20) {
       setTrialNumber(trialNumber + 1);
@@ -83,8 +89,6 @@ export default function App() {
     sendStateToBackend(1);
     
   };
-
-  const [state, setStater] = useState(0);
 
   const fetchState = async () => {
     try {
@@ -137,8 +141,10 @@ export default function App() {
       fetchState();
       if (state == 1) {
         fetchState();
-      } else if (state === 0) {
+        prevState = 1;
+      } else if (prevState != 0 && state === 0) {
         handleContinue();
+        prevState = 0;
       }
     }, 1000);
 
@@ -174,7 +180,7 @@ export default function App() {
     console.log(state);
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Trial #{trialNumber} in Progress</Text>
+        <Text style={styles.title2 }>Trial #{trialNumber} in Progress</Text>
         <Text style={styles.subtitle}>Please wait to enter your arousal and pleasure metrics</Text>
       </View>
     );
@@ -182,7 +188,7 @@ export default function App() {
 
   if (showEndScreen) {
     if (state != 0) {
-      // setState(0);
+      setStater(0);
       sendStateToBackend(state);
     }
     return (
@@ -198,7 +204,6 @@ export default function App() {
 
   if (state == 0) {
   return (
-    <ScrollView>
       <View style={styles.container}>
         <Text style={styles.title}>Trial #{trialNumber}</Text>
         <Text style={styles.header}>How Did You Feel During This Situation?</Text>
@@ -206,19 +211,19 @@ export default function App() {
         <View style={styles.sliderContainer}>
           <Text style={styles.label}>Move The Slider To Rate Your Level Of Arousal</Text>
           <View style={styles.sliderRow}>
-            <Image source={require('C:/Users/benrg/OneDrive - Rutgers University/Documents/Rutgers/Research/Path Curvature Experiment/Phase 2/robot_interaction_experiment/Sliders/assets/images/unaroused.png')} style={styles.icon} />
+            <Image source={require('C:/Users/benrg/OneDrive - Rutgers University/Documents/Rutgers/Research/Path Curvature Experiment/Phase 2/robot_interaction_experiment/Sliders/assets/images/unaroused.png')} style={styles.icon}/>
             <Slider
               value={arousal}
               onChange={handleArousalSliderChange}
               aria-label="Arousal"
-              defaultValue={50}
+              defaultValue={arousal}
               valueLabelDisplay="auto"
               min={0}
               max={100}
               style={{ color: '#1E90FF' }}
               sx={{
                 height: 22,
-                width: 1500, 
+                width: 1100, 
                 '& .MuiSlider-thumb': {
                   width: 33,
                   height: 33, 
@@ -240,14 +245,14 @@ export default function App() {
               value={pleasure}
               onChange={handlePleasureSliderChange}
               aria-label="Pleasure"
-              defaultValue={50}
+              defaultValue={pleasure}
               valueLabelDisplay="auto"
               min={0}
               max={100}
               style={{ color: '#1E90FF' }}
               sx={{
                 height: 22, 
-                width: 1500, 
+                width: 1100, 
                 '& .MuiSlider-thumb': {
                   width: 33, 
                   height: 33, 
@@ -265,7 +270,6 @@ export default function App() {
           <Text style={styles.buttonText}>Submit</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
   );
 }
 }
@@ -281,18 +285,24 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 50,
     fontWeight: 'bold',
-    marginBottom: 40,
+    marginBottom: 0,
+  },
+
+  title2: {
+    fontSize: 50,
+    fontWeight: 'bold',
+    marginBottom: 20,
   },
   subtitle: {
     fontSize: 18,
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: 80,
     color: '#555',
   },
   header: {
     fontSize: 35,
     fontWeight: 'bold',
-    marginBottom: 40,
+    marginBottom: 20,
   },
   inputContainer: {
     width: '80%',
@@ -315,7 +325,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 30,
     borderRadius: 10,
-    marginTop: 20,
+    marginTop: -15,
   },
   buttonText: {
     fontSize: 20,
@@ -323,31 +333,36 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   sliderContainer: {
-    marginBottom: 50,
+    marginBottom: 30,
     justifyContent: 'center',
     alignItems: 'center',
   },
   label: {
     fontSize: 20,
-    marginBottom: 20,
+    marginBottom: 100,
     textAlign: 'center',
   },
+
   sliderRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   icon: {
+    justifyContent: 'center',
     width: 50,
     height: 50,
     marginHorizontal: 10,
   },
   gradientIcon: {
+    justifyContent: 'center',
     position: 'absolute',
     bottom: -15,
-    left: 50,
+    left: 67.5,
+    marginBottom: 58
   },
   gradientImage: {
-    width: 1050,
-    height: 150,
+    justifyContent: 'center',
+    width: 1100,
+    height: 100,
   },
 });

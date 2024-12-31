@@ -1,23 +1,17 @@
 #!/usr/bin/env python
 """
-ReceiveAndPlot example for LSL
-
-This example shows data from all found outlets in realtime.
-It illustrates the following use cases:
-- efficiently pulling data, re-using buffers
-- automatically discarding older samples
-- online postprocessing
+ReceiveAndPlot example for LSL with graceful shutdown and immediate data writing to file.
 """
 
 import math
 import os
-from typing import List
-
 import numpy as np
 import pylsl
 import csv
 import requests
 from datetime import datetime
+import signal
+import sys
 
 # Basic parameters
 plot_duration = 5  # how many seconds of data to show
@@ -26,26 +20,29 @@ pull_interval = 500  # ms between each pull operation
 
 channel_to_plot = 33  # Channel number to plot (0-indexed)
 
-def getTime():
-    try: 
+# Path to the control file used for termination signal
+control_file_path = r"C:\Users\benrg\OneDrive - Rutgers University\Documents\Rutgers\Research\Path Curvature Experiment\Phase 2\robot_interaction_experiment\GSR-Readings\control.txt"  # Update with correct path
+
+# Get the current time for filenames
+def get_time():
+    """Fetch the current time either from an online API or fallback to local time."""
+    try:
         response = requests.get('http://worldtimeapi.org/api/timezone/America/New_York')
         jsonResponse = response.json()
         if 'datetime' in jsonResponse:
             return jsonResponse['datetime']
-    except: 
+    except Exception as e:
+        print(f"Error fetching time: {e}. Using local time as fallback.")
         now = datetime.now()
-        # Replace colons with dashes in the timestamp for compatibility with Windows
-        current_time = now.strftime("%Y-%m-%dT%H-%M-%S")  # Format the timestamp to remove colons
-        return current_time
-
+        return now.strftime("%Y-%m-%dT%H-%M-%S")  # Format timestamp
 
 # Generate a new filename based on the current timestamp
-cTime = getTime().replace(":", "-")
-fileName = r"\Users\benrg\OneDrive - Rutgers University\Documents\Rutgers\Research\Path Curvature Experiment\Phase 2\robot_interaction_experiment\HeartRate_Readings\HeartRate_{0}.csv".format(cTime)
-dir = r"\Users\benrg\OneDrive - Rutgers University\Documents\Rutgers\Research\Path Curvature Experiment\Phase 2\robot_interaction_experiment\HeartRate_Readings"
-if not os.path.exists(dir):
-        os.makedirs(dir)
-print(f"Data will be saved to: {fileName}")
+cTime = get_time().replace(":", "-")
+save_dir = os.path.join(r"C:\Users\benrg\OneDrive - Rutgers University\Documents\Rutgers\Research\Path Curvature Experiment\Phase 2\robot_interaction_experiment\HeartRate_Readings")
+if not os.path.exists(save_dir):
+    os.makedirs(save_dir)
+file_name = os.path.join(save_dir, f"HeartRate_{cTime}.csv")
+print(f"Data will be saved to: {file_name}")
 
 # Create a list to accumulate data
 data_to_write = []
@@ -96,12 +93,43 @@ def pull_and_plot_markers(inlet):
         for string, ts in zip(strings, timestamps):
             data_to_write.append([ts, string[0]])
 
+def check_for_termination():
+    """Checks the control file for termination signal."""
+    try:
+        with open(control_file_path, 'r') as file:
+            signal = file.read().strip()  # Read the control file
+            return signal == "terminate"  # Return True if termination signal is found
+    except FileNotFoundError:
+        print(f"Control file not found at {control_file_path}")
+        return False
+    except Exception as e:
+        print(f"Error checking control file: {e}")
+        return False
+
+# Signal handler to ensure graceful shutdown and immediate data saving
+def signal_handler(sig, frame):
+    """Handles termination signal and writes data to file."""
+    print("\nGraceful shutdown detected. Writing data to file...")
+    try:
+        with open(file_name, 'w', newline='') as file:
+            write = csv.writer(file)
+            write.writerow(["Timestamp", "Reading"])
+            write.writerows(data_to_write)
+            file.flush()
+        print(f"Data written to {file_name}")
+    except Exception as e:
+        print(f"Error writing data to file: {e}")
+    sys.exit(0)
+
+# Register the signal handler for SIGINT (keyboard interrupt)
+signal.signal(signal.SIGINT, signal_handler)
+
 def main():
     # Resolve all streams that could be shown
     inlets = []
-    print("looking for streams")
+    print("Looking for streams...")
     streams = pylsl.resolve_streams()
-   
+
     # Iterate over found streams, creating inlet objects that will handle data
     for info in streams:
         if info.type() == "Markers":
@@ -125,21 +153,15 @@ def main():
             elif inlet['type'] == 'marker':
                 pull_and_plot_markers(inlet['inlet'])
 
-    try:
-        # Create a timer that will pull and add new data occasionally
-        while True:
-            update()
 
-    except KeyboardInterrupt:
-        # Handle graceful shutdown when keyboard interrupt occurs
-        print("Keyboard Interrupt detected. Writing data to file...")
-    finally:
-        # Write accumulated data to CSV file when the script stops or is interrupted
-        with open(fileName, 'w', newline='') as file:
-            write = csv.writer(file)
-            write.writerow(["Timestamp", "Reading"])
-            write.writerows(data_to_write)
-        print(f"Data written to {fileName}")
+    # Create a timer that will pull and add new data occasionally
+    while True:
+        update()
+
+        # Check if termination signal is present in control file
+        if check_for_termination():
+            print("Termination signal received. Shutting down gracefully...")
+            signal_handler(None, None)  # Call the signal handler to write the data and exit gracefully
 
 if __name__ == "__main__":
     main()
