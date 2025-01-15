@@ -41,7 +41,29 @@ export default function App() {
     setStater(1);
     sendStateToBackend(1);
   };
+  const sendStateToBackend2 = async (state: any, trialNum : any) => {
+    console.log(state);
+    console.log(trialNum, "JHGVBJHGJHGFVB");
+    const loc = "SLIDER"
+    try {
+      const response = await fetch('http://192.168.1.16:3001/api/state', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({state, trialNum, loc}),
+      });
   
+      if (!response.ok) {
+        throw new Error('Failed to send state');
+      }
+  
+      console.log('State sent successfully');
+    } catch (error) {
+      console.error('Error sending state:', error);
+    }
+  };
+
   const sendStateToBackend = async (state: any) => {
     console.log(state);
     console.log(trialNumber, "JHGVBJHGJHGFVB");
@@ -78,15 +100,15 @@ export default function App() {
     setArousal(50);
     setPleasure(50);
 
-    if (trialNumber < 20) {
+    if (trialNumber < 18) {
       setTrialNumber(trialNumber + 1);
       setShowWaiting(true);
     } else {
       endExperiment([...results, data]); 
     }
-
+    
     setStater(1);
-    sendStateToBackend(1);
+    sendStateToBackend2(1, trialNumber + 1);
     
   };
 
@@ -123,6 +145,8 @@ export default function App() {
       console.log("File saving is not implemented for mobile.");
     }
 
+    setStater(-1);
+    sendStateToBackend(0);
     setShowEndScreen(true);  
     setShowWaiting(false);
   };
@@ -175,7 +199,7 @@ export default function App() {
     );
   }
 
-  if (showWaiting || state != 0) {
+  if ((showWaiting || state != 0) && !showEndScreen) {
     console.log("WAITING")
     console.log(state);
     return (
