@@ -38,7 +38,7 @@ def get_time():
 
 # Generate a new filename based on the current timestamp
 cTime = get_time().replace(":", "-")
-save_dir = os.path.join(r"C:\Users\benrg\OneDrive - Rutgers University\Documents\Rutgers\Research\Path Curvature Experiment\Phase 2\robot_interaction_experiment\HeartRate_Readings")
+save_dir = os.path.join(r"C:\Users\benrg\OneDrive - Rutgers University\Documents\Rutgers\Research\Path Curvature Experiment\Phase 2\Data")
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
 file_name = os.path.join(save_dir, f"HeartRate_{cTime}.csv")
@@ -153,15 +153,18 @@ def main():
             elif inlet['type'] == 'marker':
                 pull_and_plot_markers(inlet['inlet'])
 
+    try:
+        # Create a timer that will pull and add new data occasionally
+        while True:
+            update()
 
-    # Create a timer that will pull and add new data occasionally
-    while True:
-        update()
+            # Check if termination signal is present in control file
+            if check_for_termination():
+                print("Termination signal received. Shutting down gracefully...")
+                signal_handler(None, None)  # Call the signal handler to write the data and exit gracefully
 
-        # Check if termination signal is present in control file
-        if check_for_termination():
-            print("Termination signal received. Shutting down gracefully...")
-            signal_handler(None, None)  # Call the signal handler to write the data and exit gracefully
+    except Exception as e:
+        print(f"Error occurred: {e}")
 
 if __name__ == "__main__":
     main()

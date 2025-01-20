@@ -88,6 +88,8 @@ const writeControlSignal = (signal) => {
 app.post('/api/state', (req, res) => {
     const { state, trialNumber, loc } = req.body;
     console.log(req.body);
+    console.log("Trial NUM: ");
+    console.log(trialNumber);
     console.log("LOCATION: ");
     console.log(loc);
     
@@ -96,7 +98,7 @@ app.post('/api/state', (req, res) => {
         console.log(`Received state: ${state}`);
 
         // If the trial number has changed, run the Python script
-        if (trialNumber !== currentTrialNumber) {
+        if (trialNumber != currentTrialNumber) {
             currentTrialNumber = trialNumber;  // Update the trial number
             console.log(`Trial number changed: ${trialNumber}`);
             runPythonScripts(trialNumber);  // Call the function to run both Python scripts

@@ -41,9 +41,9 @@ export default function App() {
     setStater(1);
     sendStateToBackend(1);
   };
-  const sendStateToBackend2 = async (state: any, trialNum : any) => {
+  const sendStateToBackend2 = async (state: any, trialNumber : any) => {
     console.log(state);
-    console.log(trialNum, "JHGVBJHGJHGFVB");
+    console.log(trialNumber, "JHGVBJHGJHGFVB2");
     const loc = "SLIDER"
     try {
       const response = await fetch('http://192.168.1.16:3001/api/state', {
@@ -51,7 +51,7 @@ export default function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({state, trialNum, loc}),
+        body: JSON.stringify({state, trialNumber, loc}),
       });
   
       if (!response.ok) {

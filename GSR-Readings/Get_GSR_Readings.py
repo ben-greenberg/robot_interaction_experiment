@@ -39,8 +39,8 @@ def get_time():
 
 # Generate a new filename based on the current timestamp
 cTime = get_time().replace(":", "-")
-save_dir = r"\Users\benrg\OneDrive - Rutgers University\Documents\Rutgers\Research\Path Curvature Experiment\Phase 2\robot_interaction_experiment\GSR_Readings"
-save_dir = os.path.join(r"C:\Users\benrg\OneDrive - Rutgers University\Documents\Rutgers\Research\Path Curvature Experiment\Phase 2\robot_interaction_experiment\GSR_Readings")
+save_dir = r"\Users\benrg\OneDrive - Rutgers University\Documents\Rutgers\Research\Path Curvature Experiment\Phase 2\Data"
+save_dir = os.path.join(r"C:\Users\benrg\OneDrive - Rutgers University\Documents\Rutgers\Research\Path Curvature Experiment\Phase 2\Data")
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
 file_name = os.path.join(save_dir, f"GSR_{cTime}.csv")
