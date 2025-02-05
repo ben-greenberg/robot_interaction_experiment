@@ -100,7 +100,7 @@ export default function App() {
     setArousal(50);
     setPleasure(50);
 
-    if (trialNumber < 18) {
+    if (trialNumber < 24) {
       setTrialNumber(trialNumber + 1);
       setShowWaiting(true);
     } else {

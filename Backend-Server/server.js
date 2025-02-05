@@ -19,8 +19,41 @@ let currentTrialNumber = 0;
 let pythonProcess1 = null;
 let pythonProcess2 = null;
 
+let pOneStart = false;
+let pTwoStart = false;
+
 // Path to the control text file for signaling termination
 const controlFilePath = "C:/Users/benrg/OneDrive - Rutgers University/Documents/Rutgers/Research/Path Curvature Experiment/Phase 2/robot_interaction_experiment/GSR-Readings/control.txt" 
+
+let seconds = 0;
+let timerInterval;
+
+function startTimer() {
+  timerInterval = setInterval(() => {
+    seconds += 0.01;
+    // console.log("Seconds:", seconds);
+  }, 10);
+}
+
+function stopTimer() {
+    clearInterval(timerInterval);
+    seconds = 0;
+}
+
+let seconds2 = 0;
+let timerInterval2;
+
+function startTimer2() {
+  timerInterval2 = setInterval(() => {
+    seconds2 += 0.01;
+    // console.log("Seconds2:", seconds2);
+  }, 10);
+}
+
+function stopTimer2() {
+    clearInterval(timerInterval2);
+    seconds2 = 0;
+}
 
 // Function to terminate the previous Python processes if they're running
 const terminatePreviousProcesses = () => {
@@ -36,52 +69,67 @@ const terminatePreviousProcesses = () => {
 };
 
 // Function to run both Python scripts simultaneously
-const runPythonScripts = (trialNumber) => {
+async function runPythonScripts (trialNumber) {
     // Paths to your Python scripts
+    pOneStart = false;
+    pTwoStart = false;
     const pythonScriptPath1 = "C:/Users/benrg/OneDrive - Rutgers University/Documents/Rutgers/Research/Path Curvature Experiment/Phase 2/robot_interaction_experiment/GSR-Readings/Get_GSR_Readings.py";
     const pythonScriptPath2 = "C:/Users/benrg/OneDrive - Rutgers University/Documents/Rutgers/Research/Path Curvature Experiment/Phase 2/robot_interaction_experiment/GSR-Readings/Get_HeartRate_Readings.py";
 
     // Terminate any existing Python processes
     terminatePreviousProcesses();
+    console.log("Sleep For 4 Seconds");
+    setTimeout(() => {
+        console.log("Waited 4 seconds");
+        stopTimer();
+        // Start the first Python process
+        pythonProcess1 = spawn('C:/Users/benrg/miniconda3/python.exe', ['-u', pythonScriptPath1, trialNumber]);
+        startTimer();
 
-    // Start the first Python process
-    pythonProcess1 = spawn('C:/Users/benrg/miniconda3/python.exe', ['-u', pythonScriptPath1, trialNumber]);
+        // Capture output from the first Python script
+        pythonProcess1.stdout.on('data', (data) => {
+            console.log(`Python Script 1 stdout: ${data.toString()}`);
+            pOneStart = true;
+        });
 
-    // Capture output from the first Python script
-    pythonProcess1.stdout.on('data', (data) => {
-        console.log(`Python Script 1 stdout: ${data.toString()}`);
-    });
+        pythonProcess1.stderr.on('data', (data) => {
+            console.error(`Python Script 1 stderr: ${data.toString()}`);
+            pOneStart = true;
+        });
 
-    pythonProcess1.stderr.on('data', (data) => {
-        console.error(`Python Script 1 stderr: ${data.toString()}`);
-    });
+        pythonProcess1.on('close', (code) => {
+            console.log(`Python Script 1 exited with code ${code}`);
+            pythonProcess1 = null;  // Reset the first pythonProcess after it finishes
+        });
 
-    pythonProcess1.on('close', (code) => {
-        console.log(`Python Script 1 exited with code ${code}`);
-        pythonProcess1 = null;  // Reset the first pythonProcess after it finishes
-    });
 
-    // Start the second Python process
-    pythonProcess2 = spawn('C:/Users/benrg/miniconda3/python.exe', ['-u', pythonScriptPath2, trialNumber]);
+        stopTimer2();
+        // Start the second Python process
+        pythonProcess2 = spawn('C:/Users/benrg/miniconda3/python.exe', ['-u', pythonScriptPath2, trialNumber]);
+        console.log("Tried To Start #2");
+        startTimer2();
+        // Capture output from the second Python script
+        pythonProcess2.stdout.on('data', (data) => {
+            console.log(`Python Script 2 stdout: ${data.toString()}`);
+            pTwoStart = true;
+        });
 
-    // Capture output from the second Python script
-    pythonProcess2.stdout.on('data', (data) => {
-        console.log(`Python Script 2 stdout: ${data.toString()}`);
-    });
+        pythonProcess2.stderr.on('data', (data) => {
+            console.error(`Python Script 2 stderr: ${data.toString()}`);
+            pTwoStart = true;
+        });
 
-    pythonProcess2.stderr.on('data', (data) => {
-        console.error(`Python Script 2 stderr: ${data.toString()}`);
-    });
-
-    pythonProcess2.on('close', (code) => {
-        console.log(`Python Script 2 exited with code ${code}`);
-        pythonProcess2 = null;  // Reset the second pythonProcess after it finishes
-    });
+        pythonProcess2.on('close', (code) => {
+            console.log(`Python Script 2 exited with code ${code}`);
+            pythonProcess2 = null;  // Reset the second pythonProcess after it finishes
+        });
+    }, 6000);
 };
 
 // Function to write the control signal to the text file
 const writeControlSignal = (signal) => {
     fs.writeFileSync(controlFilePath, signal, 'utf8');  // Write the signal (terminate or continue)
+    console.log("Told To Write: " + signal + " ");
 };
 
 // Endpoint to receive the page state and trialNumber
@@ -129,7 +177,91 @@ app.get('/api/state', (req, res) => {
     }
 });
 
+app.get('/api/stateMatLab', (req, res) => {
+    console.log("MATLAB TRIED TO GET STATE");
+    if (currentState === 0) {
+        // Provide the current state to MATLAB or any client
+        console.log("0 State");
+        res.status(200).send({ currentState: 0 });
+    } else if (currentState === 1){
+
+        if (!pOneStart) {
+            pythonProcess1.stdout.on('data', (data) => {
+                console.log(`Python Script 1 stdout: ${data.toString()}`);
+                pOneStart = true;
+            });
+
+            pythonProcess1.stderr.on('data', (data) => {
+                console.error(`Python Script 1 stderr: ${data.toString()}`);
+                pOneStart = true;
+            });
+        }
+
+        if (!pTwoStart) {
+            pythonProcess2.stdout.on('data', (data) => {
+                console.log(`Python Script 2 stdout: ${data.toString()}`);
+                pTwoStart = true;
+            });
+
+            pythonProcess2.stderr.on('data', (data) => {
+                console.error(`Python Script 2 stderr: ${data.toString()}`);
+                pTwoStart = true;
+            });
+        }
+        
+        if (!pOneStart && seconds > 5) {
+            stopTimer();
+            seconds = 0;
+            // Start the first Python process
+            pythonProcess1 = spawn('C:/Users/benrg/miniconda3/python.exe', ['-u', pythonScriptPath1, trialNumber]);
+            startTimer();
+            console.log("Tried To Start #1 After Original Failure");
+            // Capture output from the first Python script
+            pythonProcess1.stdout.on('data', (data) => {
+                console.log(`Python Script 1 stdout: ${data.toString()}`);
+                pOneStart = true;
+            });
+
+            pythonProcess1.stderr.on('data', (data) => {
+                console.error(`Python Script 1 stderr: ${data.toString()}`);
+                pOneStart = true;
+            });
+        }
+
+        if (!pTwoStart && seconds2 > 5) {
+            stopTimer2();
+            seconds2 = 0;
+            // Start the second Python process
+            pythonProcess2 = spawn('C:/Users/benrg/miniconda3/python.exe', ['-u', pythonScriptPath2, trialNumber]);
+            console.log("Tried To Start #2 After Original Failure");
+            startTimer2();
+            // Capture output from the second Python script
+            pythonProcess2.stdout.on('data', (data) => {
+                console.log(`Python Script 2 stdout: ${data.toString()}`);
+                pTwoStart = true;
+            });
+
+            pythonProcess2.stderr.on('data', (data) => {
+                console.error(`Python Script 2 stderr: ${data.toString()}`);
+                pTwoStart = true;
+            });
+        }
+
+        if (pOneStart && pTwoStart) {
+            console.log("Scripts Started");
+            res.status(200).send({ currentState });
+        } else {
+            console.log("Scripts Still Starting");
+            res.status(200).send({ currentState: 0 });
+        }
+    } else {
+        console.log("THERE WAS AN ERROR");
+        res.status(200).send({ currentState: 0 });
+    }
+});
+
 // Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
+
