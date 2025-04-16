@@ -1,0 +1,72 @@
+import os
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.signal import butter, filtfilt
+
+def butterLowpass(cutoff, fs, order=4):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    return b, a
+
+def butterLowpassFilter(data, cutoff, fs, order=4):
+    b, a = butterLowpass(cutoff, fs, order=order)
+    y = filtfilt(b, a, data)
+    return y
+
+def process_and_plot(file_path):
+    try:
+        data = pd.read_csv(file_path)
+
+        times = data['Timestamp'].values
+        gsr_data = data['Reading'].values
+
+        if len(times) < 2:
+            print(f"{os.path.basename(file_path)}: Not enough data.")
+            return
+
+        fs = 1 / np.mean(np.diff(times))
+
+        # Apply filters
+        filtered_gsr = butterLowpassFilter(gsr_data, 15, fs)
+        adjusted_filtered_gsr = butterLowpassFilter(gsr_data, 1, fs)
+        extra_adjusted_filtered_gsr = butterLowpassFilter(gsr_data, 0.5, fs)
+
+        # Plot and label
+        plt.figure(figsize=(10, 5))
+        # plt.plot(times, gsr_data, color='orange', label='Original')
+        # plt.plot(times, filtered_gsr, color='blue', label='15Hz Filter')
+        plt.plot(times, adjusted_filtered_gsr, color='red', label='1Hz Filter')
+        plt.plot(times, extra_adjusted_filtered_gsr, color='green', label='0.5Hz Filter')
+
+        plt.xlabel('Time (s)')
+        plt.ylabel('GSR Reading')
+        plt.title(f'Filtered GSR - {os.path.basename(file_path)}')
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+
+        # Thresholding
+        threshold = 0.95e-5
+        elevated_indices = np.where(filtered_gsr > threshold)
+        elevated_times = times[elevated_indices]
+
+        print(f"{os.path.basename(file_path)} - Elevated GSR times:")
+        print(elevated_times)
+
+    except Exception as e:
+        print(f"Error processing {file_path}: {e}")
+
+def process_directory(directory_path):
+    for filename in os.listdir(directory_path):
+        if filename.endswith(".csv"):
+            file_path = os.path.join(directory_path, filename)
+            process_and_plot(file_path)
+
+    # Show all plots at once after all processing is done
+    plt.show()
+
+if __name__ == "__main__":
+    input_directory = r"/Users/likhith/Downloads/GSR_Readings"
+    process_directory(input_directory)

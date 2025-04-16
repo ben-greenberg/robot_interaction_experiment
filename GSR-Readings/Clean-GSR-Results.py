@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 
 def process_csv(file_path):
     # Read the CSV file
@@ -6,7 +7,7 @@ def process_csv(file_path):
 
     # Check if the DataFrame has at least 2 rows and 2 columns
     if len(df) < 2 or len(df.columns) < 2:
-        print("CSV file does not have enough data.")
+        print(f"{os.path.basename(file_path)}: Not enough data.")
         return
 
     # Remove duplicate rows
@@ -24,9 +25,14 @@ def process_csv(file_path):
 
     # Save the updated DataFrame back to the same CSV file
     df.to_csv(file_path, index=False)
-    print(f"Processed data has been saved to {file_path}")
+    print(f"Processed: {os.path.basename(file_path)}")
+
+def process_directory(directory_path):
+    for filename in os.listdir(directory_path):
+        if filename.endswith(".csv"):
+            file_path = os.path.join(directory_path, filename)
+            process_csv(file_path)
 
 if __name__ == "__main__":
-    input_file = r"/Users/likhith/Downloads/GSR_Output.csv"  # Replace with your CSV file path
-
-    process_csv(input_file)
+    input_directory = r"/Users/likhith/Downloads/GSR_Readings"  # Replace with your directory
+    process_directory(input_directory)
