@@ -1,0 +1,98 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.signal import butter, filtfilt, find_peaks
+import os
+
+np.set_printoptions(suppress=True)
+
+def butterLowpass(cutoff, fs, order=4):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    return b, a
+
+def butterLowpassFilter(data, cutoff, fs, order=4):
+    b, a = butterLowpass(cutoff, fs, order=order)
+    y = filtfilt(b, a, data)
+    return y
+
+def find_rise_start_from_lowest(signal, times, peak_idx):
+    """Finds the lowest point between time = 0 and the given peak index."""
+    return np.argmin(signal[:peak_idx + 1])  # Includes the peak itself
+
+def process_and_plot(file_path):
+    try:
+        data = pd.read_csv(file_path)
+
+        times = data['Timestamp'].values
+        gsr_data = data['Reading'].values
+
+        if len(times) < 2:
+            print(f"{os.path.basename(file_path)}: Not enough data.")
+            return
+
+        if np.max(times) > 1e4:
+            times = times / 1000.0
+
+        fs = 1 / np.mean(np.diff(times))
+
+        filtered_1hz = butterLowpassFilter(gsr_data, 1, fs)
+        filtered_0_5hz = butterLowpassFilter(gsr_data, 0.5, fs)
+
+        amplitude = np.max(filtered_0_5hz) - np.min(filtered_0_5hz)
+
+        peaks, _ = find_peaks(filtered_0_5hz)
+        peak_times = times[peaks]
+
+        # Filter peaks to be between 3s and 30s
+        valid_peaks_mask = (peak_times >= 3) & (peak_times < 30)
+        valid_peaks = peaks[valid_peaks_mask]
+        valid_peak_times = np.round(times[valid_peaks], 3)
+
+        if len(valid_peaks) == 0:
+            print(f"{os.path.basename(file_path)} - No peaks between 3s and 30s.")
+            return
+
+        highest_peak_idx = valid_peaks[np.argmax(filtered_0_5hz[valid_peaks])]
+        highest_peak_time = round(times[highest_peak_idx], 3)
+
+        rise_start_idx = find_rise_start_from_lowest(filtered_0_5hz, times, highest_peak_idx)
+        rise_start_time = round(times[rise_start_idx], 3)
+
+        # Plotting
+        plt.figure(figsize=(10, 5))
+        plt.plot(times, filtered_1hz, color='red', label='1Hz Filter')
+        plt.plot(times, filtered_0_5hz, color='green', label='0.5Hz Filter')
+        plt.plot(times[valid_peaks], filtered_0_5hz[valid_peaks], 'bo', label='Peaks (3s–30s)')
+        plt.axvline(times[highest_peak_idx], color='blue', linestyle='--', label='Highest Peak (3s–30s)')
+        plt.axvline(times[rise_start_idx], color='purple', linestyle='--', label='Rise Start')
+
+        plt.xlabel('Time (s)')
+        plt.ylabel('GSR Reading')
+        plt.title(f'Filtered GSR - {os.path.basename(file_path)}')
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+
+        print(f"{os.path.basename(file_path)} - Amplitude: {format(amplitude, '.6f')}")
+        print(f"Highest Peak Time (0.5Hz, 3s–30s): {highest_peak_time}")
+        print(f"Rise to Peak Begins at: {rise_start_time}")
+        print(f"Rise Time: {highest_peak_time - rise_start_time}")
+        print("All Peak Times (0.5Hz, 3s–30s):")
+        print(valid_peak_times)
+
+    except Exception as e:
+        print(f"Error processing {file_path}: {e}")
+
+def process_directory(directory_path):
+    for filename in os.listdir(directory_path):
+        if filename.endswith(".csv"):
+            file_path = os.path.join(directory_path, filename)
+            process_and_plot(file_path)
+
+    plt.show()
+
+if __name__ == "__main__":
+    input_directory = r"/Users/likhith/Downloads/GSR_Readings"
+    process_directory(input_directory)

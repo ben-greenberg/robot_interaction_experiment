@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, TextInput, Platform } from 'react-native';
 import Slider from '@mui/material/Slider';  
 import { saveAs } from 'file-saver';  
@@ -8,16 +8,20 @@ export default function App() {
   const [trialNumber, setTrialNumber] = useState(1);
   const [showWaiting, setShowWaiting] = useState(true);
   const [showNameInput, setShowNameInput] = useState(true);
-  const [showEndScreen, setShowEndScreen] = useState(false);  
+  const [showEndScreen, setShowEndScreen] = useState(false); 
+  const [state, setStater] = useState(0);
   const [arousal, setArousal] = useState<number>(50);
   const [pleasure, setPleasure] = useState(50);
   const [results, setResults] = useState<string[][]>([]);  
+  var prevState = 1;
 
   const handleArousalSliderChange = (event: Event, newValue: number | number[]) => {
+    console.log(newValue);
     setArousal(newValue as number);
   };
 
   const handlePleasureSliderChange = (event: Event, newValue: number | number[]) => {
+    console.log(newValue);
     setPleasure(newValue as number);
   };
 
@@ -33,23 +37,95 @@ export default function App() {
       setShowNameInput(false);
       setShowWaiting(true);
     }
+
+    setStater(1);
+    sendStateToBackend(1);
   };
+  const sendStateToBackend2 = async (state: any, trialNumber : any) => {
+    console.log(state);
+    console.log(trialNumber, "JHGVBJHGJHGFVB2");
+    const loc = "SLIDER"
+    try {
+      const response = await fetch('http://192.168.1.16:3001/api/state', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({state, trialNumber, loc}),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to send state');
+      }
+  
+      console.log('State sent successfully');
+    } catch (error) {
+      console.error('Error sending state:', error);
+    }
+  };
+
+  const sendStateToBackend = async (state: any) => {
+    console.log(state);
+    console.log(trialNumber, "JHGVBJHGJHGFVB");
+    const loc = "SLIDER"
+    try {
+      const response = await fetch('http://192.168.1.16:3001/api/state', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({state, trialNumber, loc}),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to send state');
+      }
+  
+      console.log('State sent successfully');
+    } catch (error) {
+      console.error('Error sending state:', error);
+    }
+  };
+
 
   const appendResults = (newResult: string[]) => {
     setResults(prevResults => [...prevResults, newResult]);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     console.log("Trial", trialNumber, "Arousal:", arousal, "Pleasure:", pleasure);
     const data = [trialNumber.toString(), arousal.toString(), pleasure.toString()];  // Convert to strings
 
     appendResults(data);
+    setArousal(50);
+    setPleasure(50);
 
-    if (trialNumber < 20) {
+    if (trialNumber < 24) {
       setTrialNumber(trialNumber + 1);
       setShowWaiting(true);
     } else {
       endExperiment([...results, data]); 
+    }
+    
+    setStater(1);
+    sendStateToBackend2(1, trialNumber + 1);
+    
+  };
+
+  const fetchState = async () => {
+    try {
+      const response = await fetch('http://192.168.1.16:3001/api/state');
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log(data, "DATA");
+        setStater(data.currentState); // Set the state received from the server
+        console.log(data.currentState, "EEE");
+      } else {
+        console.error('Error fetching state:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching state:', error);
     }
   };
 
@@ -69,6 +145,8 @@ export default function App() {
       console.log("File saving is not implemented for mobile.");
     }
 
+    setStater(-1);
+    sendStateToBackend(0);
     setShowEndScreen(true);  
     setShowWaiting(false);
   };
@@ -81,7 +159,27 @@ export default function App() {
     setShowEndScreen(false);
   };
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log("OIUHBN", state);
+      fetchState();
+      if (state == 1) {
+        fetchState();
+        prevState = 1;
+      } else if (prevState != 0 && state === 0) {
+        handleContinue();
+        prevState = 0;
+      }
+    }, 1000);
+
+    return () => clearInterval(interval); // Cleanup interval on unmount
+  }, [state]);
+  
   if (showNameInput) {
+    if (state != 0) {
+      setStater(0)
+      sendStateToBackend(0);
+    }
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Enter Your Name</Text>
@@ -101,19 +199,22 @@ export default function App() {
     );
   }
 
-  if (showWaiting) {
+  if ((showWaiting || state != 0) && !showEndScreen) {
+    console.log("WAITING")
+    console.log(state);
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Trial #{trialNumber} in Progress</Text>
+        <Text style={styles.title2 }>Trial #{trialNumber} in Progress</Text>
         <Text style={styles.subtitle}>Please wait to enter your arousal and pleasure metrics</Text>
-        <TouchableOpacity style={styles.button} onPress={handleContinue}>
-          <Text style={styles.buttonText}>Continue</Text>
-        </TouchableOpacity>
       </View>
     );
   }
 
   if (showEndScreen) {
+    if (state != 0) {
+      setStater(0);
+      sendStateToBackend(state);
+    }
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Experiment Completed</Text>
@@ -125,8 +226,8 @@ export default function App() {
     );
   }
 
+  if (state == 0) {
   return (
-    <ScrollView>
       <View style={styles.container}>
         <Text style={styles.title}>Trial #{trialNumber}</Text>
         <Text style={styles.header}>How Did You Feel During This Situation?</Text>
@@ -134,58 +235,58 @@ export default function App() {
         <View style={styles.sliderContainer}>
           <Text style={styles.label}>Move The Slider To Rate Your Level Of Arousal</Text>
           <View style={styles.sliderRow}>
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/ArousalPleasureSliders/assets/images/unaroused.png')} style={styles.icon} />
+            <Image source={require('C:/Users/benrg/OneDrive - Rutgers University/Documents/Rutgers/Research/Path Curvature Experiment/Phase 2/robot_interaction_experiment/Sliders/assets/images/unaroused.png')} style={styles.icon}/>
             <Slider
               value={arousal}
               onChange={handleArousalSliderChange}
               aria-label="Arousal"
-              defaultValue={50}
+              defaultValue={arousal}
               valueLabelDisplay="auto"
               min={0}
               max={100}
               style={{ color: '#1E90FF' }}
               sx={{
                 height: 22,
-                width: 1500, 
+                width: 1100, 
                 '& .MuiSlider-thumb': {
                   width: 33,
                   height: 33, 
                 },
               }}
             />
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/ArousalPleasureSliders/assets/images/aroused.png')} style={styles.icon} />
+            <Image source={require('C:/Users/benrg/OneDrive - Rutgers University/Documents/Rutgers/Research/Path Curvature Experiment/Phase 2/robot_interaction_experiment/Sliders/assets/images/aroused.png')} style={styles.icon} />
           </View>
           <View style={styles.gradientIcon}>
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/ArousalPleasureSliders/assets/images/Slider Gradient.png')} style={styles.gradientImage} />
+            <Image source={require('C:/Users/benrg/OneDrive - Rutgers University/Documents/Rutgers/Research/Path Curvature Experiment/Phase 2/robot_interaction_experiment/Sliders/assets/images/Slider Gradient.png')} style={styles.gradientImage} />
           </View>
         </View>
 
         <View style={styles.sliderContainer}>
           <Text style={styles.label}>Move The Slider To Rate Your Level Of Pleasure</Text>
           <View style={styles.sliderRow}>
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/ArousalPleasureSliders/assets/images/sad.png')} style={styles.icon} />
+            <Image source={require('C:/Users/benrg/OneDrive - Rutgers University/Documents/Rutgers/Research/Path Curvature Experiment/Phase 2/robot_interaction_experiment/Sliders/assets/images/sad.png')} style={styles.icon} />
             <Slider
               value={pleasure}
               onChange={handlePleasureSliderChange}
               aria-label="Pleasure"
-              defaultValue={50}
+              defaultValue={pleasure}
               valueLabelDisplay="auto"
               min={0}
               max={100}
               style={{ color: '#1E90FF' }}
               sx={{
                 height: 22, 
-                width: 1500, 
+                width: 1100, 
                 '& .MuiSlider-thumb': {
                   width: 33, 
                   height: 33, 
                 },
               }}
             />
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/ArousalPleasureSliders/assets/images/happy.png')} style={styles.icon} />
+            <Image source={require('C:/Users/benrg/OneDrive - Rutgers University/Documents/Rutgers/Research/Path Curvature Experiment/Phase 2/robot_interaction_experiment/Sliders/assets/images/happy.png')} style={styles.icon} />
           </View>
           <View style={styles.gradientIcon}>
-            <Image source={require('/Users/likhith/Desktop/RAM LAB Programs/ArousalPleasureSliders/assets/images/Slider Gradient.png')} style={styles.gradientImage} />
+            <Image source={require('C:/Users/benrg/OneDrive - Rutgers University/Documents/Rutgers/Research/Path Curvature Experiment/Phase 2/robot_interaction_experiment/Sliders/assets/images/Slider Gradient.png')} style={styles.gradientImage} />
           </View>
         </View>
 
@@ -193,8 +294,8 @@ export default function App() {
           <Text style={styles.buttonText}>Submit</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
   );
+}
 }
 
 const styles = StyleSheet.create({
@@ -208,18 +309,24 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 50,
     fontWeight: 'bold',
-    marginBottom: 40,
+    marginBottom: 0,
+  },
+
+  title2: {
+    fontSize: 50,
+    fontWeight: 'bold',
+    marginBottom: 20,
   },
   subtitle: {
     fontSize: 18,
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: 80,
     color: '#555',
   },
   header: {
     fontSize: 35,
     fontWeight: 'bold',
-    marginBottom: 40,
+    marginBottom: 20,
   },
   inputContainer: {
     width: '80%',
@@ -230,52 +337,56 @@ const styles = StyleSheet.create({
   input: {
     width: '100%',
     padding: 10,
+    fontSize: 20,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    textAlign: 'center', 
+    borderRadius: 10,
+    borderColor: '#cccccc',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  button: {
+    backgroundColor: '#1E90FF',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+    marginTop: -15,
+  },
+  buttonText: {
+    fontSize: 20,
+    color: 'white',
+    fontWeight: 'bold',
   },
   sliderContainer: {
-    width: '100%',
-    marginBottom: 40,
+    marginBottom: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   label: {
     fontSize: 20,
-    marginBottom: 10,
+    marginBottom: 100,
     textAlign: 'center',
   },
+
   sliderRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  slider: {
-    flex: 5,
-    height: 40,
-    marginHorizontal: 10,
-  },
   icon: {
-    width: 70,
-    height: 70,
+    justifyContent: 'center',
+    width: 50,
+    height: 50,
     marginHorizontal: 10,
   },
   gradientIcon: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 40,
+    justifyContent: 'center',
+    position: 'absolute',
+    bottom: -15,
+    left: 67.5,
+    marginBottom: 58
   },
   gradientImage: {
-    width: '90%', 
-    height: 92.5,
-    resizeMode: 'contain', 
-  },
-  button: {
-    backgroundColor: '#1E90FF',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
+    justifyContent: 'center',
+    width: 1100,
+    height: 100,
   },
 });
